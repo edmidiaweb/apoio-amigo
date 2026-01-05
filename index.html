@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apoio Amigo - Chatbot de Bem-Estar</title>
+    <style>
+        /* CSS COMPLETO - DESIGN WHATSAPP */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Helvetica, Arial, sans-serif; }
+        body { background-color: #e5ddd5; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
+
+        .chat-container { width: 100%; max-width: 450px; background: #efe7dd; display: flex; flex-direction: column; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+
+        /* Header */
+        .header { background: #075e54; color: white; padding: 15px; display: flex; align-items: center; gap: 12px; z-index: 10; }
+        .header img { width: 40px; height: 40px; border-radius: 50%; background: #eee; }
+        .header-info h2 { font-size: 16px; }
+        .header-info p { font-size: 12px; opacity: 0.9; }
+
+        /* Janela de Chat */
+        #chat-window { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth; }
+
+        /* Mensagens */
+        .message { max-width: 85%; padding: 10px; border-radius: 8px; font-size: 14px; line-height: 1.5; position: relative; white-space: pre-wrap; word-wrap: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .bot { background: white; align-self: flex-start; border-top-left-radius: 0; }
+        .user { background: #dcf8c6; align-self: flex-end; border-top-right-radius: 0; }
+        .time { font-size: 10px; color: #999; text-align: right; margin-top: 5px; }
+
+        /* Tópicos Rápidos */
+        .topics-container { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; width: 85%; align-self: flex-start; }
+        .topic-btn { background: white; border: 1px solid #075e54; color: #333; padding: 10px 15px; border-radius: 20px; cursor: pointer; font-size: 13px; text-align: left; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .topic-btn:hover { background: #f0f0f0; transform: translateX(5px); }
+        .topic-btn.emergency { border-color: #ff4b2b; color: #ff4b2b; font-weight: bold; }
+
+        /* Input Area */
+        .input-area { background: #f0f0f0; padding: 10px; display: flex; gap: 10px; align-items: center; }
+        input { flex: 1; padding: 12px; border: none; border-radius: 25px; outline: none; font-size: 14px; }
+        #send-btn { background: #075e54; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+
+        /* SOS Overlay */
+        #sos-btn { position: fixed; bottom: 85px; right: 20px; width: 55px; height: 55px; border-radius: 50%; background: #ff4b2b; color: white; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 99; }
+        #sos-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+        #breath-circle { width: 160px; height: 160px; border-radius: 50%; background: rgba(255, 75, 43, 0.1); border: 3px solid #ff4b2b; display: flex; align-items: center; justify-content: center; transition: transform 4s ease-in-out; margin: 30px 0; }
+
+        .typing { font-size: 12px; color: #777; margin: 5px 0 10px 15px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="header">
+        <img src="https://cdn-icons-png.flaticon.com/512/4140/4140037.png" alt="Avatar">
+        <div class="header-info">
+            <h2>Guia de Bem-Estar</h2>
+            <p>Online agora</p>
+        </div>
+    </div>
+
+    <div id="chat-window"></div>
+    <div id="typing-indicator" class="typing">Digitando...</div>
+
+    <div class="input-area">
+        <input type="text" id="user-input" placeholder="Digite uma mensagem...">
+        <button id="send-btn">➤</button>
+    </div>
+</div>
+
+<button id="sos-btn">SOS</button>
+
+<div id="sos-overlay">
+    <h1 style="color: #ff4b2b;">Respire com calma</h1>
+    <p>Acompanhe o círculo para estabilizar sua respiração.</p>
+    <div id="breath-circle"><span id="breath-text" style="color:#ff4b2b; font-weight:bold;">Inspirar</span></div>
+    <div style="max-width: 350px; width: 100%;">
+        <a href="tel:188" style="display: block; background: #075e54; color: white; padding: 15px; text-decoration: none; border-radius: 30px; margin-bottom: 10px; font-weight: bold;">LIGAR PARA O CVV (188)</a>
+        <button onclick="fecharSOS()" style="background: none; border: 1px solid #999; padding: 10px 20px; border-radius: 20px; cursor: pointer; color: #666;">Já me sinto melhor</button>
+    </div>
+</div>
+
+<script>
+    /* VARIÁVEIS E BANCO DE DADOS */
+    const chatWindow = document.getElementById('chat-window');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const typingIndicator = document.getElementById('typing-indicator');
+    const sosOverlay = document.getElementById('sos-overlay');
+    const somNotificacao = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+
+    let modoGratidao = false;
+    let sosInterval;
+    let progresso = JSON.parse(localStorage.getItem('progresso_v2')) || { gratidao: 0, exercicios: 0, conversas: 0 };
+
+    const afirmacoesDiarias = [
+        "Eu sou capaz de lidar com qualquer coisa que este dia trouxer.",
+        "Minha sensibilidade não é uma fraqueza, é a minha força.",
+        "Eu tenho permissão para descansar se as coisas ficarem pesadas.",
+        "Um dia difícil não define uma vida inteira. Eu escolho recomeçar agora.",
+        "Eu sou digno(a) de paz, amor e cuidado.",
+        "Eu respeito o meu ritmo e honro os meus pequenos progressos."
+    ];
+
+    const sentimentos = {
+        crise: { keywords: ["morrer", "me matar", "desistir", "suicídio", "fim"], resposta: "Sinto que a dor está muito forte agora. Por favor, você não precisa passar por isso sozinho. O CVV atende 24h gratuitamente pelo número 188. Eles são maravilhosos em ouvir." },
+        panico: { keywords: ["pânico", "falta de ar", "acelerado", "desespero"], resposta: "Isso é uma resposta física do seu corpo e vai passar. Você está em segurança. Vamos tentar um exercício de respiração?", exercicio: "respiracao" },
+        tristeza: { keywords: ["triste", "vazio", "desânimo", "chorar", "mal"], resposta: "Sinto muito que hoje esteja sendo um dia cinza. Não se cobre tanto. Às vezes, o sucesso do dia é apenas respirar. Quer tentar uma pequena ativação?", exercicio: "ativacao" },
+        ansiedade: { keywords: ["medo", "preocupado", "angústia", "pensamentos", "ansioso"], resposta: "A ansiedade tenta nos levar para um futuro que ainda não existe. Vamos voltar para o presente?", exercicio: "aterramento" }
+    };
+
+    const exercicios = {
+        respiracao: { titulo: "🌬️ Respiração Quadrada", passos: "1. Inspire (4s)\n2. Segure (4s)\n3. Expire (4s)\n4. Espere (4s)\nRepita o ciclo." },
+        aterramento: { titulo: "🧘 Técnica 5-4-3-2-1", passos: "Diga em voz alta:\n5 coisas que vê\n4 que pode tocar\n3 sons que ouve\n2 cheiros\n1 sabor." },
+        ativacao: { titulo: "🚶 Ativação Suave", passos: "Beba um copo de água sentindo a temperatura ou estique os braços para cima com força por 10 segundos." }
+    };
+
+    /* FUNÇÕES DE INTERAÇÃO */
+
+    function addMessage(text, type) {
+        const div = document.createElement('div');
+        div.className = `message ${type}`;
+        div.innerHTML = `${text}<div class="time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>`;
+        chatWindow.appendChild(div);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        if (type === 'bot') somNotificacao.play().catch(() => {});
+    }
+
+    function showTypingAndRespond(text, callback) {
+        typingIndicator.style.display = 'block';
+        setTimeout(() => {
+            typingIndicator.style.display = 'none';
+            addMessage(text, 'bot');
+            if (callback) callback();
+        }, 1500);
+    }
+
+    function exibirTopicosDeAjuda() {
+        const topicos = [
+            { texto: "😰 Estou com medo", valor: "Estou com medo e ansiedade" },
+            { texto: "🚨 Estou em crise", valor: "Estou em crise de pânico" },
+            { texto: "💔 Quero desistir", valor: "Quero desistir de tudo" },
+            { texto: "✨ Praticar gratidão", valor: "gratidão" },
+            { texto: "📊 Ver meu progresso", valor: "progresso" }
+        ];
+        const container = document.createElement('div');
+        container.className = 'topics-container';
+        topicos.forEach(t => {
+            const btn = document.createElement('button');
+            btn.className = 'topic-btn' + (t.texto.includes("🚨") || t.texto.includes("💔") ? " emergency" : "");
+            btn.innerText = t.texto;
+            btn.onclick = () => { userInput.value = t.valor; processarEntrada(); container.remove(); };
+            container.appendChild(btn);
+        });
+        chatWindow.appendChild(container);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function processarEntrada() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        addMessage(text, 'user');
+        userInput.value = '';
+        progresso.conversas++;
+        localStorage.setItem('progresso_v2', JSON.stringify(progresso));
+
+        if (modoGratidao) {
+            showTypingAndRespond("Que relato lindo. Focar no que há de bom é um exercício poderoso. Guardei isso com carinho! ✨");
+            progresso.gratidao++;
+            localStorage.setItem('progresso_v2', JSON.stringify(progresso));
+            modoGratidao = false;
+            return;
+        }
+
+        const lowerText = text.toLowerCase();
+        let identificado = false;
+
+        if (lowerText.includes("progresso") || lowerText.includes("relatório")) {
+            showTypingAndRespond(`📊 **Seu Painel de Cuidado**\n\n✨ Gratidões: ${progresso.gratidao}\n🧘 Exercícios: ${progresso.exercicios}\n💬 Conversas: ${progresso.conversas}\n\nVocê está se priorizando e isso é incrível!`);
+            return;
+        }
+
+        if (lowerText.includes("gratidão") || lowerText.includes("agradecer")) {
+            modoGratidao = true;
+            showTypingAndRespond("✨ **Momento Gratidão**: O que aconteceu de bom hoje, mesmo que seja algo bem pequeno? Me conte.");
+            return;
+        }
+
+        for (let s in sentimentos) {
+            if (sentimentos[s].keywords.some(k => lowerText.includes(k))) {
+                showTypingAndRespond(sentimentos[s].resposta, () => {
+                    if (sentimentos[s].exercicio) {
+                        const ex = exercicios[sentimentos[s].exercicio];
+                        setTimeout(() => {
+                            showTypingAndRespond(`**${ex.titulo}**\n\n${ex.passos}`);
+                            progresso.exercicios++;
+                            localStorage.setItem('progresso_v2', JSON.stringify(progresso));
+                        }, 2000);
+                    }
+                });
+                identificado = true;
+                break;
+            }
+        }
+
+        if (!identificado) {
+            showTypingAndRespond("Entendo. Estou aqui para te apoiar. Algum desses tópicos descreve o que você sente?", exibirTopicosDeAjuda);
+        }
+    }
+
+    /* SOS E INICIALIZAÇÃO */
+
+    document.getElementById('sos-btn').addEventListener('click', () => {
+        sosOverlay.style.display = 'flex';
+        let state = 0;
+        sosInterval = setInterval(() => {
+            document.getElementById('breath-circle').style.transform = state === 0 ? "scale(1.6)" : "scale(1.0)";
+            document.getElementById('breath-text').innerText = state === 0 ? "Inspirar" : "Expirar";
+            state = state === 0 ? 1 : 0;
+        }, 4000);
+    });
+
+    function fecharSOS() {
+        sosOverlay.style.display = 'none';
+        clearInterval(sosInterval);
+    }
+
+    window.onload = () => {
+        const hora = new Date().getHours();
+        let saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
+        
+        showTypingAndRespond(`${saudacao}! Sou seu guia de bem-estar. Estou feliz por você estar aqui.`);
+        
+        setTimeout(() => {
+            const frase = afirmacoesDiarias[Math.floor(Math.random() * afirmacoesDiarias.length)];
+            showTypingAndRespond(`✨ **Afirmação do Dia:**\n"${frase}"`);
+        }, 3000);
+
+        setTimeout(() => {
+            showTypingAndRespond("Como você se sente agora?", exibirTopicosDeAjuda);
+        }, 5500);
+    };
+</script>
+
+</body>
+</html>
