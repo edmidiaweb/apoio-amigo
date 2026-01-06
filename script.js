@@ -1,101 +1,141 @@
-/**
- * SCRIPT.JS - Motor de Apoio Amigo
- * Inclui: Sistema Especialista, Feedbacks Direcionados e Filtro de Emergência.
- */
-
 const chatWindow = document.getElementById('chat-window');
 const userInput = document.getElementById('user-input');
 const typingIndicator = document.getElementById('typing-indicator');
 
-// 1. CONFIGURAÇÃO DOS FLUXOS (3 Perguntas + Feedbacks Especialistas)
+let estadoAtual = { tema: null, etapa: 0, respostas: [] };
+let sosInterval;
+
 const fluxos = {
     recaida: {
         perguntas: [
-            "1. Qual pensamento ou sentimento 'perigoso' você está alimentando agora que te faz querer jogar tudo para o alto?",
-            "2. Do que você está tentando fugir ou o que está tentando anestesiar agora (dor, tédio ou frustração)?",
-            "3. Se você agir por impulso agora, como você vai se sentir exatamente 15 minutos após o erro?"
+            {
+                q: "1. Qual pensamento ou sentimento 'perigoso' você está alimentando agora?",
+                sugestoes: ["Raiva de alguém", "Tédio profundo", "Acho que ninguém me entende", "Vontade de fugir de tudo"]
+            },
+            {
+                q: "2. Do que você está tentando fugir ou o que está tentando anestesiar agora?",
+                sugestoes: ["Uma dor do passado", "Frustração com o trabalho", "Medo do futuro", "Solidão insuportável"]
+            },
+            {
+                q: "3. Se você agir por impulso agora, como vai se sentir daqui a 15 minutos?",
+                sugestoes: ["Arrependido e culpado", "Fracassado", "Com medo das consequências", "Terei que recomeçar do zero"]
+            }
         ],
-        analisar: (respostas) => {
-            const r = respostas.join(" ").toLowerCase();
-            if (r.includes("cansei") || r.includes("aguento") || r.includes("difícil"))
-                return "🚨 **INTERVENÇÃO:** O cansaço é o maior inimigo da sobriedade. Não tome decisões permanentes baseadas em sentimentos temporários. Sua mente está mentindo para você agora. PARE e apenas respire.";
-            if (r.includes("controle") || r.includes("eu sei") || r.includes("consigo sozinho"))
-                return "🚨 **INTERVENÇÃO:** O excesso de confiança precede a queda. No momento em que você acha que não precisa de ajuda, você está mais vulnerável. Ligue para alguém imediatamente.";
-            if (r.includes("raiva") || r.includes("merece") || r.includes("ódio"))
-                return "🚨 **INTERVENÇÃO:** A raiva é um veneno que você toma esperando que o outro morra. O seu erro não punirá ninguém além de você mesmo. Solte essa brasa antes que ela te queime.";
-            return "🚨 **INTERVENÇÃO:** Você identificou o gatilho, agora desmonte a arma. Saia de onde está, mude o ambiente e fale com alguém. O impulso é uma onda: ela sobe, mas sempre desce.";
+        analisar: (res) => {
+            const r = res.join(" ").toLowerCase();
+            let base = "Amigo, eu te entendo perfeitamente... Eu sei como você está se sentindo agora, essa pressão parece insuportável. Eu já passei por momentos onde a única vontade era parar de sentir. ";
+            
+            if (r.includes("cansei") || r.includes("fugir")) 
+                return `🚨 ${base} Mas escute: o cansaço está mentindo para você. Não tome uma decisão permanente por causa de um sentimento temporário. Apenas respire, isso vai passar.`;
+            
+            return `🚨 ${base} Você já deu o passo mais difícil que é admitir o que está sentindo. Agora, não lute sozinho. Desmonte essa arma, mude de lugar e fale com alguém que você confia.`;
         }
     },
     carater: {
         perguntas: [
-            "1. Onde você permitiu que o egoísmo ou o medo guiassem suas ações hoje?",
-            "2. Você agiu com desonestidade ou tentou manipular alguma situação para seu benefício?",
-            "3. O seu orgulho impediu você de ser útil a alguém ou de admitir um erro?"
+            {
+                q: "1. Onde você permitiu que o egoísmo ou o medo guiassem suas ações hoje?",
+                sugestoes: ["Menti para evitar conflito", "Fui rude com alguém", "Pensei só no meu benefício", "Fui preguiçoso"]
+            },
+            {
+                q: "2. Você agiu com desonestidade ou tentou manipular algo hoje?",
+                sugestoes: ["Omiti uma verdade", "Exagerei uma história", "Tentei controlar alguém", "Fui totalmente honesto"]
+            },
+            {
+                q: "3. O seu orgulho impediu você de ser útil ou de admitir um erro?",
+                sugestoes: ["Não pedi desculpas", "Achei que era melhor que os outros", "Não aceitei uma crítica", "Fiquei com raiva"]
+            }
         ],
-        analisar: (respostas) => {
-            const r = respostas.join(" ").toLowerCase();
-            if (r.includes(" mas ") || r.includes("porque")) 
-                return "📊 **Feedback:** Cuidado com as justificativas. Explicar o erro é uma forma de não aceitá-lo. Admita sua falha de forma nua e crua para poder crescer.";
-            if (r.includes("ele ") || r.includes("ela ") || r.includes("eles"))
-                return "📊 **Feedback:** Você está focando no erro alheio. O inventário é sobre a SUA responsabilidade. O que VOCÊ poderia ter feito de diferente?";
-            if (r.includes("menti") || r.includes("escondi"))
-                return "📊 **Feedback:** A desonestidade é o veneno da alma. Vá e repare isso agora. A transparência absoluta é sua única proteção contra a culpa.";
-            if (r.length < 15)
-                return "📊 **Feedback:** A reforma íntima exige profundidade. Suas respostas foram superficiais. Tente mergulhar mais fundo na próxima vez.";
-            return "📊 **Feedback:** A honestidade rigorosa liberta. Continue fazendo seu inventário diário sem medo de encarar suas sombras.";
+        analisar: (res) => {
+            const r = res.join(" ").toLowerCase();
+            let base = "Eu te entendo... Olhar para nossas falhas dói muito e eu sei o peso que esse desconforto traz. Eu também já tentei esconder meus erros por medo. ";
+            
+            if (r.includes("menti") || r.includes("omiti")) 
+                return `📊 ${base} Mas a verdade é a única coisa que vai te dar o sono tranquilo de volta. Repare esse erro assim que puder; você vai sentir um alívio enorme.`;
+            
+            return `📊 ${base} Ter coragem de fazer esse inventário já mostra que você é uma pessoa incrível em busca de melhora. Continue firme, a honestidade liberta a gente.`;
         }
     },
     ansiedade: {
         perguntas: [
-            "1. O que exatamente você está tentando controlar no futuro agora?",
-            "2. Esse medo é sobre algo real que está acontecendo ou é apenas um pensamento repetitivo?",
-            "3. O que de pior aconteceria se você soltasse esse controle por 5 minutos?"
+            {
+                q: "1. O que exatamente você está tentando controlar no futuro agora?",
+                sugestoes: ["Finanças/Contas", "Opinião dos outros", "Saúde/Doença", "O resultado de algo"]
+            },
+            {
+                q: "2. Esse medo é sobre algo real ou é um pensamento repetitivo?",
+                sugestoes: ["Pensamento em loop", "Problema real", "Não sei dizer", "Medo do que pode vir"]
+            },
+            {
+                q: "3. O que de pior aconteceria se você soltasse esse controle por 5 minutos?",
+                sugestoes: ["Ficaria sem rumo", "Nada mudaria", "Teria que aceitar", "Teria paz"]
+            }
         ],
-        analisar: (respostas) => {
-            const r = respostas.join(" ").toLowerCase();
-            if (r.includes("tudo") || r.includes("sempre")) 
-                return "📊 **Feedback:** Você está sofrendo por onipotência. Pare de tentar controlar o incontrolável. Foque apenas no que você pode fazer nos próximos 10 minutos.";
-            return "📊 **Feedback:** A ansiedade é o nome que damos à nossa tentativa de ser Deus e prever o futuro. Aceite sua limitação e volte para o presente.";
-        }
-    },
-    sobrecarga: {
-        perguntas: [
-            "1. Quais dessas tarefas você está fazendo apenas para agradar aos outros ou por medo de dizer não?",
-            "2. O que aconteceria se você fizesse apenas o essencial hoje e deixasse o resto para amanhã?",
-            "3. Você está tentando fazer tudo sozinho por perfeccionismo ou desconfiança dos outros?"
-        ],
-        analisar: (respostas) => {
-            const r = respostas.join(" ").toLowerCase();
-            if (r.includes("agradar") || r.includes("medo")) 
-                return "📊 **Feedback:** Você está sendo escravo da aprovação alheia. Dizer não para os outros é dizer sim para sua própria paz.";
-            return "📊 **Feedback:** Você não é uma máquina. Aprenda a delegar e aceite que o 'bom o suficiente' já é o bastante para hoje.";
-        }
-    },
-    solidao: {
-        perguntas: [
-            "1. Você está sozinho por falta de pessoas ou por medo de se abrir e ser julgado?",
-            "2. O que essa solidão está tentando te dizer sobre o seu relacionamento consigo mesmo?",
-            "3. Qual pequena ação de conexão você poderia fazer agora (uma mensagem ou um oi)?"
-        ],
-        analisar: (respostas) => {
-            return "📊 **Feedback:** A solidão é um convite ao autoconhecimento, mas o isolamento é uma armadilha. Quebre o ciclo: estenda a mão para alguém agora.";
+        analisar: (res) => {
+            let base = "Eu sei exatamente como é esse aperto no peito... Eu te entendo, parece que o mundo vai desabar se a gente não resolver tudo agora. Eu já passei por noites em claro exatamente assim. ";
+            return `📊 ${base} Mas tente lembrar: você não precisa resolver a sua vida inteira hoje. Foque apenas no próximo minuto. Você está seguro agora.`;
         }
     },
     panico: {
         perguntas: [
-            "1. Onde você sente o desconforto no corpo agora e o que sua mente diz que vai acontecer?",
-            "2. Você percebe que, apesar do medo, seus pulmões ainda estão funcionando e seu coração está batendo por você?",
-            "3. O que aconteceria se você parasse de lutar contra a sensação e apenas deixasse ela passar?"
+            {
+                q: "1. Onde você sente o desconforto no corpo agora?",
+                sugestoes: ["Peito apertado", "Falta de ar", "Tremores/Suor", "Tontura"]
+            },
+            {
+                q: "2. Você percebe que, apesar do medo, você ainda está respirando?",
+                sugestoes: ["Sim, mas é difícil", "Estou tentando focar", "Não consigo sentir", "Vou observar"]
+            },
+            {
+                q: "3. O que aconteceria se você apenas observasse a sensação sem lutar contra ela?",
+                sugestoes: ["Passaria mais rápido", "Sentiria menos medo", "Teria mais controle", "Tenho medo de tentar"]
+            }
         ],
-        analisar: () => "🚨 **Feedback:** O pânico é um alarme falso. Não lute contra ele. Sinta seus pés no chão e deixe a onda passar. Ela sempre passa."
+        analisar: () => {
+            return "🚨 **Eu estou aqui com você...** Eu sei como essa sensação é assustadora, eu já senti esse medo de perder o controle. Mas olhe para mim: seu corpo só está tentando te proteger, ele não vai te machucar. Respire comigo, isso vai passar em instantes, eu prometo.";
+        }
+    },
+    sobrecarga: {
+        perguntas: [
+            {
+                q: "1. O que você está fazendo apenas para agradar aos outros?",
+                sugestoes: ["Trabalho extra", "Dizendo sim sem querer", "Assumindo erros alheios", "Tentando ser perfeito"]
+            },
+            {
+                q: "2. O que aconteceria se você fizesse apenas o essencial hoje?",
+                sugestoes: ["Alguém ficaria bravo", "Eu teria descanso", "O mundo não pararia", "Me sentiria culpado"]
+            },
+            {
+                q: "3. Você está tentando fazer tudo sozinho?",
+                sugestoes: ["Sim, não confio", "Sim, não quero incomodar", "Sim, do meu jeito", "Ninguém ajuda"]
+            }
+        ],
+        analisar: (res) => {
+            let base = "Eu te entendo tanto... Eu sei como é carregar o mundo nas costas e sentir que, se você soltar, tudo quebra. Eu já me senti exausto tentando ser tudo para todos. ";
+            return `📊 ${base} Mas você não é uma máquina. Descansar não é um erro, é uma necessidade. Comece a dizer 'não' por você. Sua paz vale muito.`;
+        }
+    },
+    solidao: {
+        perguntas: [
+            {
+                q: "1. Você está sozinho por falta de pessoas ou por medo de se abrir?",
+                sugestoes: ["Medo de julgamento", "Ninguém me procura", "Me sinto diferente", "Prefiro ficar na minha"]
+            },
+            {
+                q: "2. O que essa solidão diz sobre seu relacionamento com você mesmo?",
+                sugestoes: ["Não gosto da minha companhia", "Me cobro demais", "Me sinto vazio", "Preciso de alguém"]
+            },
+            {
+                q: "3. Qual pequena conexão você poderia fazer hoje?",
+                sugestoes: ["Mandar um oi", "Ligar para alguém", "Falar com vizinho", "Sorrir para alguém"]
+            }
+        ],
+        analisar: () => {
+            return "📊 **Você não está sozinho nessa...** Eu te entendo, esse silêncio em volta da gente às vezes machuca. Eu já passei por dias em que parecia que ninguém se importava. Mas saiba que você tem um valor imenso. Tente uma conexão pequena hoje, apenas para quebrar esse gelo. Eu acredito em você.";
+        }
     }
 };
 
-// 2. GERENCIAMENTO DE ESTADO
-let estadoAtual = { tema: null, etapa: 0, respostas: [] };
-let sosInterval;
-
-// 3. FUNÇÕES DE INTERAÇÃO
 function addMessage(text, type) {
     const div = document.createElement('div');
     div.className = `message ${type}`;
@@ -105,13 +145,32 @@ function addMessage(text, type) {
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-function responder(text, callback) {
+function responder(text, callback, sugestoes = []) {
     typingIndicator.style.display = 'block';
     setTimeout(() => {
         typingIndicator.style.display = 'none';
         addMessage(text, 'bot');
-        if(callback) callback();
-    }, 1200);
+        if (sugestoes.length > 0) exibirSugestoes(sugestoes);
+        if (callback) callback();
+    }, 1000);
+}
+
+function exibirSugestoes(lista) {
+    const container = document.createElement('div');
+    container.className = 'sugestoes-container';
+    lista.forEach(sug => {
+        const btn = document.createElement('button');
+        btn.className = 'sugestao-btn';
+        btn.innerText = sug;
+        btn.onclick = () => {
+            userInput.value = sug;
+            processarEntrada();
+            container.remove();
+        };
+        container.appendChild(btn);
+    });
+    chatWindow.appendChild(container);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
 function exibirTopicos() {
@@ -140,61 +199,55 @@ function iniciarFluxo(tema) {
     estadoAtual.tema = tema;
     estadoAtual.etapa = 0;
     estadoAtual.respostas = [];
-    responder(fluxos[tema].perguntas[0]);
+    const primeiraPerg = fluxos[tema].perguntas[0];
+    responder(primeiraPerg.q, null, primeiraPerg.sugestoes);
 }
 
-// 4. MOTOR DE PROCESSAMENTO
 function processarEntrada() {
     const text = userInput.value.trim();
     if(!text) return;
+
+    // Remover sugestões antigas da tela ao enviar manualmente
+    const antigas = document.querySelector('.sugestoes-container');
+    if (antigas) antigas.remove();
+
     addMessage(text, 'user');
     userInput.value = '';
     const lower = text.toLowerCase();
 
-    // --- FILTRO DE SEGURANÇA CRÍTICA ---
-    const termosRisco = ["matar", "suicidio", "desistir de tudo", "vou usar agora", "beber agora", "fim da minha vida"];
-    if (termosRisco.some(termo => lower.includes(termo))) {
-        responder("🚨 DETECTADO RISCO IMEDIATO. Por favor, foque na sua respiração agora. Não tome nenhuma decisão.", () => {
-            setTimeout(abrirSOS, 1500);
-        });
+    // Filtro de Risco
+    const termosRisco = ["matar", "suicidio", "fim da minha vida", "vou usar agora", "beber agora"];
+    if (termosRisco.some(t => lower.includes(t))) {
+        responder("🚨 RISCO DETECTADO. Foque na sua respiração e peça ajuda agora.", () => setTimeout(abrirSOS, 1000));
         return;
     }
 
-    // Fluxo de Perguntas
     if (estadoAtual.tema) {
         estadoAtual.respostas.push(text);
         estadoAtual.etapa++;
         const perguntas = fluxos[estadoAtual.tema].perguntas;
 
         if (estadoAtual.etapa < perguntas.length) {
-            responder(perguntas[estadoAtual.etapa]);
+            const prox = perguntas[estadoAtual.etapa];
+            responder(prox.q, null, prox.sugestoes);
         } else {
             const feedback = fluxos[estadoAtual.tema].analisar(estadoAtual.respostas);
             responder(feedback, () => {
-                setTimeout(() => responder("Como se sente após essa reflexão? Escolha outro tema se precisar.", exibirTopicos), 2500);
+                setTimeout(() => responder("Espero que fique bem. Eu acredito em você.", exibirTopicos), 2000);
             });
             estadoAtual.tema = null;
         }
     } else {
-        // Tentativa de identificar tema por texto livre
         let identificado = false;
         for (let t in fluxos) {
             if (lower.includes(t)) { iniciarFluxo(t); identificado = true; break; }
         }
-        if (!identificado) {
-            responder("Como posso te apoiar agora? Escolha um tema abaixo:", exibirTopicos);
-        }
+        if (!identificado) responder("Como posso ajudar?", exibirTopicos);
     }
 }
 
-// 5. UTILITÁRIOS E SOS
 function toggleTheme() { document.body.classList.toggle('dark-mode'); }
-
-function reiniciarConversa() { 
-    chatWindow.innerHTML = ''; 
-    estadoAtual.tema = null; 
-    inicializarChat(); 
-}
+function reiniciarConversa() { chatWindow.innerHTML = ''; estadoAtual.tema = null; inicializarChat(); }
 
 function abrirSOS() {
     document.getElementById('sos-overlay').style.display = 'flex';
@@ -203,20 +256,16 @@ function abrirSOS() {
         const circle = document.getElementById('breath-circle');
         const text = document.getElementById('breath-text');
         if(circle) circle.style.transform = s === 0 ? "scale(1.4)" : "scale(1)";
-        if(text) text.innerText = s === 0 ? "Inspirar" : "Expira";
+        if(text) text.innerText = s === 0 ? "Inspirar" : "Expirar";
         s = s === 0 ? 1 : 0;
     }, 4000);
 }
 
-function fecharSOS() {
-    document.getElementById('sos-overlay').style.display = 'none';
-    clearInterval(sosInterval);
-}
+function fecharSOS() { document.getElementById('sos-overlay').style.display = 'none'; clearInterval(sosInterval); }
 
 function inicializarChat() {
-    responder("Olá. Sou seu guia de apoio. Vamos analisar o que está acontecendo hoje?", exibirTopicos);
+    responder("Olá. Sou seu guia. Vamos analisar o que está acontecendo hoje?", exibirTopicos);
 }
 
-// 6. LISTENERS
 userInput.addEventListener("keypress", (e) => { if(e.key === "Enter") processarEntrada(); });
 window.onload = inicializarChat;
