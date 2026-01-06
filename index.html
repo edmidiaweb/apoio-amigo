@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apoio Amigo - Guia de Bem-Estar e Reforma de Caráter</title>
+    <title>Apoio Amigo - Versão Final Consolidada</title>
     <style>
         :root {
             --bg-chat: #e5ddd5;
@@ -27,10 +27,10 @@
             --chat-window-bg: #0b141a;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Helvetica, sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background-color: var(--bg-chat); display: flex; justify-content: center; height: 100vh; overflow: hidden; transition: 0.3s; }
 
-        .chat-container { width: 100%; max-width: 450px; background: var(--chat-window-bg); display: flex; flex-direction: column; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
+        .chat-container { width: 100%; max-width: 450px; background: var(--chat-window-bg); display: flex; flex-direction: column; position: relative; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
 
         .header { background: var(--header-color); color: white; padding: 15px; display: flex; align-items: center; gap: 12px; z-index: 10; }
         .header img { width: 40px; height: 40px; border-radius: 50%; background: #eee; }
@@ -47,8 +47,7 @@
         .time { font-size: 10px; color: var(--text-sub); text-align: right; margin-top: 5px; }
 
         .topics-container { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; width: 85%; align-self: flex-start; }
-        .topic-btn { background: var(--msg-bot); border: 1px solid var(--header-color); color: var(--text-main); padding: 10px 15px; border-radius: 20px; cursor: pointer; font-size: 13px; text-align: left; transition: 0.2s; }
-        .topic-btn:hover { background: var(--input-bg); transform: translateX(5px); }
+        .topic-btn { background: var(--msg-bot); border: 1px solid var(--header-color); color: var(--text-main); padding: 10px 15px; border-radius: 20px; cursor: pointer; font-size: 13px; text-align: left; }
         .topic-btn.emergency { border-color: #ff4b2b; color: #ff4b2b; font-weight: bold; }
 
         .input-area { background: var(--input-bg); padding: 10px; display: flex; gap: 10px; align-items: center; }
@@ -71,15 +70,15 @@
             <h2>Guia de Bem-Estar</h2>
             <p>Um dia de cada vez</p>
         </div>
-        <button class="btn-header" onclick="toggleTheme()" title="Mudar Tema">🌓</button>
-        <button class="btn-header" onclick="reiniciarConversa()" title="Reiniciar">↻</button>
+        <button class="btn-header" onclick="toggleTheme()">🌓</button>
+        <button class="btn-header" onclick="reiniciarConversa()">↻</button>
     </div>
 
     <div id="chat-window"></div>
     <div id="typing-indicator" class="typing">digitando...</div>
 
     <div class="input-area">
-        <input type="text" id="user-input" placeholder="Diga como se sente...">
+        <input type="text" id="user-input" placeholder="Escreva aqui...">
         <button id="send-btn">➤</button>
     </div>
 </div>
@@ -87,7 +86,7 @@
 <button id="sos-btn">SOS</button>
 
 <div id="sos-overlay">
-    <h1 style="color: #ff4b2b;">Respire com calma</h1>
+    <h1 style="color: #ff4b2b;">Respire Fundo</h1>
     <div id="breath-circle"><span id="breath-text" style="color:#ff4b2b; font-weight:bold;">Inspirar</span></div>
     <div style="max-width: 350px; width: 100%;">
         <a href="tel:188" style="display: block; background: #ff4b2b; color: white; padding: 15px; text-decoration: none; border-radius: 30px; margin-bottom: 15px; font-weight: bold;">LIGAR PARA O CVV (188)</a>
@@ -102,6 +101,7 @@
     const typingIndicator = document.getElementById('typing-indicator');
     const somNotificacao = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
 
+    // Estados
     let modoGratidao = false;
     let modoInventario = false;
     let etapaInventario = 0;
@@ -111,16 +111,35 @@
 
     const afirmacoes = [
         "Sou capaz de lidar com os desafios de hoje.",
-        "Minha sensibilidade é minha maior força.",
         "Respeito meu ritmo e honro meus progressos.",
-        "Um dia difícil não define minha vida.",
-        "Sou digno(a) de paz e cuidado agora.",
         "Não preciso ser perfeito para ser incrível.",
-        "Tenho o direito de estabelecer limites.",
-        "Minha jornada é única, não preciso me comparar.",
-        "Foco no que posso controlar e solto o resto.",
-        "A cada respiração, libero as tensões."
+        "Minha jornada é única, não me comparo.",
+        "Eu escolho focar no que posso controlar.",
+        "A cada respiração, libero as tensões.",
+        "Sou digno(a) de paz e cuidado agora.",
+        "Minha sensibilidade é minha força.",
+        "Um dia difícil não define minha vida.",
+        "Tenho o direito de estabelecer limites."
     ];
+
+    const dadosSentimentos = {
+        ansiedade: { 
+            resposta: "A ansiedade tenta te levar para um futuro que ainda não existe. Vamos voltar para o aqui e agora?",
+            exercicio: "🧘 **Técnica 5-4-3-2-1**: Diga 5 coisas que você vê, 4 que pode tocar, 3 sons que ouve, 2 cheiros e 1 sabor."
+        },
+        panico: { 
+            resposta: "Sinta seus pés firmes no chão. Essa sensação física é passageira e você está em segurança.",
+            exercicio: "🌬️ **Respiração Quadrada**: Inspire (4s), segure (4s), expire (4s), espere (4s). Repita 3 vezes."
+        },
+        sobrecarga: { 
+            resposta: "Parece que você está carregando o mundo. Lembre-se: você não precisa resolver tudo hoje.",
+            exercicio: "🚶 **Pausa de Alívio**: Beba um copo de água bem devagar e sinta a temperatura. Alongue os braços."
+        },
+        solidao: { 
+            resposta: "A solidão dói, mas eu estou aqui com você agora. Vamos acolher esse sentimento com carinho?",
+            exercicio: "📖 **Ação**: Liste 2 coisas que você gosta em sua própria companhia ou ouça sua música favorita."
+        }
+    };
 
     function toggleTheme() { document.body.classList.toggle('dark-mode'); }
 
@@ -143,15 +162,13 @@
     }
 
     function exibirTopicosDeAjuda() {
-        // Evita exibir tópicos se já estivermos em um modo especial
         if (modoInventario || modoGratidao) return;
-
         const topicos = [
-            { texto: "😰 Ansiedade/Medo", valor: "Estou ansioso" },
-            { texto: "🚨 Crise de Pânico", valor: "Estou em crise" },
-            { texto: "🌱 Reforma de Caráter", valor: "reforma de carater" },
-            { texto: "🤯 Sobrecarga/Stress", valor: "Estou sobrecarregado" },
-            { texto: "💔 Solidão", valor: "Sinto-me sozinho" },
+            { texto: "😰 Ansiedade/Medo", valor: "ansiedade" },
+            { texto: "🚨 Crise de Pânico", valor: "pânico" },
+            { texto: "🌱 Reforma de Caráter", valor: "inventário" },
+            { texto: "🤯 Sobrecarga/Stress", valor: "sobrecarga" },
+            { texto: "💔 Solidão", valor: "solidão" },
             { texto: "✨ Praticar Gratidão", valor: "gratidão" },
             { texto: "📊 Meu Progresso", valor: "progresso" }
         ];
@@ -170,22 +187,17 @@
     function analisarEGerarFeedback() {
         let feedback = "";
         const todasRespostas = respostasInventario.join(" ").toLowerCase();
-
-        if (todasRespostas.includes("sim") || todasRespostas.includes("orgulho") || todasRespostas.includes("raiva") || todasRespostas.includes("ego")) {
-            feedback = "📊 **Feedback Sincero:** Identificamos que o orgulho ou raiva dominaram. **A correção:** A cura exige quebrar o ego. Pratique a humildade ainda hoje e peça desculpas se necessário. Não deixe o ressentimento virar gatilho.";
-        } else if (todasRespostas.includes("menti") || todasRespostas.includes("escondi") || todasRespostas.includes("desonesto")) {
-            feedback = "📊 **Feedback Sincero:** A desonestidade é o veneno da alma. **A correção:** Admita a verdade imediatamente. Viver na mentira cria um peso insuportável. A transparência é sua proteção.";
+        if (todasRespostas.includes("sim") || todasRespostas.includes("orgulho") || todasRespostas.includes("raiva")) {
+            feedback = "📊 **Feedback Sincero:** O orgulho é um bloqueio para a cura. **A correção:** Pratique a humildade ainda hoje. Peça desculpas ou admita um erro para alguém.";
+        } else if (todasRespostas.includes("menti") || todasRespostas.includes("escondi")) {
+            feedback = "📊 **Feedback Sincero:** A mentira alimenta a doença. **A correção:** Admita a verdade imediatamente. A transparência é o que mantém você livre.";
         } else {
-            feedback = "📊 **Feedback Sincero:** Olhar para si exige coragem. **A correção:** Se houve egoísmo, pratique um ato de serviço desinteressado agora. Saia do 'eu' e foque no 'outro'.";
+            feedback = "📊 **Feedback Sincero:** Olhar para si exige coragem. **A correção:** Saia do egoísmo praticando um ato de serviço desinteressado para alguém agora.";
         }
-
-        modoInventario = false; // Reseta antes para permitir os tópicos no final
+        modoInventario = false;
         showTypingAndRespond(feedback, () => {
-            setTimeout(() => {
-                showTypingAndRespond("Inventário concluído. Como você se sente após essa admissão? Escolha um novo tópico se precisar.", exibirTopicosDeAjuda);
-            }, 2000);
+            setTimeout(() => showTypingAndRespond("Como se sente após essa admissão?", exibirTopicosDeAjuda), 2000);
         });
-
         progresso.exercicios++;
         localStorage.setItem('progresso_vFinal', JSON.stringify(progresso));
     }
@@ -197,73 +209,84 @@
         userInput.value = '';
         progresso.conversas++;
         localStorage.setItem('progresso_vFinal', JSON.stringify(progresso));
-
         const lower = text.toLowerCase();
 
-        // 1. Lógica do Inventário (Prioridade Máxima)
+        // 1. MODO INVENTÁRIO
         if (modoInventario) {
-            respostasInventario.push(text);
+            respostasInventario.push(lower);
             etapaInventario++;
-            if (etapaInventario === 1) {
-                showTypingAndRespond("2. Você agiu com desonestidade ou tentou manipular alguma situação para seu benefício hoje? (Seja sincero)");
-            } else if (etapaInventario === 2) {
-                showTypingAndRespond("3. O seu orgulho ou raiva impediram você de ser útil a alguém ou de admitir um erro?");
-            } else if (etapaInventario === 3) {
-                analisarEGerarFeedback();
-            }
+            if (etapaInventario === 1) showTypingAndRespond("2. Você agiu com desonestidade ou tentou manipular algo para seu benefício hoje?");
+            else if (etapaInventario === 2) showTypingAndRespond("3. O seu orgulho ou raiva impediram você de ser útil ou de admitir um erro?");
+            else if (etapaInventario === 3) analisarEGerarFeedback();
             return;
         }
 
-        // 2. Início do Inventário
-        if(lower.includes("carater") || lower.includes("inventario") || lower.includes("reforma")) {
-            modoInventario = true;
-            etapaInventario = 0;
-            respostasInventario = [];
+        // 2. MODO GRATIDÃO
+        if (modoGratidao) {
+            showTypingAndRespond("Gratidão registrada! Isso fortalece sua mente. ✨");
+            progresso.gratidao++;
+            localStorage.setItem('progresso_vFinal', JSON.stringify(progresso));
+            modoGratidao = false; return;
+        }
+
+        // 3. IDENTIFICAÇÃO DE TEMAS
+        if (lower.includes("carater") || lower.includes("inventário") || lower.includes("reforma")) {
+            modoInventario = true; etapaInventario = 0; respostasInventario = [];
             showTypingAndRespond("Iniciando inventário moral. 1. Em que momento hoje você permitiu que o egoísmo ou o medo guiassem suas ações?");
             return;
         }
-
-        // 3. Lógica de Gratidão
-        if (modoGratidao) {
-            showTypingAndRespond("Obrigado por compartilhar esse momento bom. Guardado! ✨");
-            progresso.gratidao++;
-            localStorage.setItem('progresso_vFinal', JSON.stringify(progresso));
-            modoGratidao = false; 
+        if (lower.includes("ansiedade") || lower.includes("ansioso") || lower.includes("medo")) {
+            showTypingAndRespond(dadosSentimentos.ansiedade.resposta, () => {
+                setTimeout(() => showTypingAndRespond(dadosSentimentos.ansiedade.exercicio), 2000);
+            });
             return;
         }
-
-        // 4. Comandos Gerais
-        if(lower.includes("progresso")) {
+        if (lower.includes("pânico") || lower.includes("crise") || lower.includes("panico")) {
+            showTypingAndRespond(dadosSentimentos.panico.resposta, () => {
+                setTimeout(() => showTypingAndRespond(dadosSentimentos.panico.exercicio), 2000);
+            });
+            return;
+        }
+        if (lower.includes("sobrecarga") || lower.includes("stress") || lower.includes("cansado")) {
+            showTypingAndRespond(dadosSentimentos.sobrecarga.resposta, () => {
+                setTimeout(() => showTypingAndRespond(dadosSentimentos.sobrecarga.exercicio), 2000);
+            });
+            return;
+        }
+        if (lower.includes("solidão") || lower.includes("sozinho") || lower.includes("solidao")) {
+            showTypingAndRespond(dadosSentimentos.solidao.resposta, () => {
+                setTimeout(() => showTypingAndRespond(dadosSentimentos.solidao.exercicio), 2000);
+            });
+            return;
+        }
+        if (lower.includes("morrer") || lower.includes("desistir")) {
+            showTypingAndRespond("Você é importante. Por favor, ligue 188 agora (CVV). Existe ajuda.");
+            return;
+        }
+        if (lower.includes("progresso")) {
             showTypingAndRespond(`📊 **Seu Progresso**\n\n✨ Gratidões: ${progresso.gratidao}\n🧘 Exercícios: ${progresso.exercicios}\n💬 Conversas: ${progresso.conversas}`);
-        } else if(lower.includes("gratidão") || lower.includes("agradecer")) {
+        } else if (lower.includes("gratidão") || lower.includes("agradecer")) {
             modoGratidao = true;
-            showTypingAndRespond("✨ **Momento Gratidão**: O que aconteceu de bom hoje?");
-        } else if(lower.includes("morrer") || lower.includes("desistir")) {
-            showTypingAndRespond("Você não está sozinho. A dor é forte, mas a ajuda é real. Ligue 188 agora (CVV).");
-        } else if(lower.includes("panico") || lower.includes("ar")) {
-            showTypingAndRespond("Isso é uma crise e vai passar. Foque na sua respiração.");
+            showTypingAndRespond("✨ O que aconteceu de bom hoje?");
         } else {
-            // Se nada for identificado e NÃO estivermos em modo inventário, mostra tópicos
-            showTypingAndRespond("Entendo. Como posso ajudar agora? Escolha um tópico ou escreva o que sente.", exibirTopicosDeAjuda);
+            showTypingAndRespond("Como posso ajudar? Escolha um tópico abaixo ou escreva o que sente agora.", exibirTopicosDeAjuda);
         }
     }
 
     function reiniciarConversa() { 
-        modoInventario = false; 
-        modoGratidao = false; 
-        chatWindow.innerHTML = ''; 
-        inicializarChat(); 
+        modoInventario = false; modoGratidao = false; 
+        chatWindow.innerHTML = ''; inicializarChat(); 
     }
 
     function inicializarChat() {
         const h = new Date().getHours();
         let s = h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
-        showTypingAndRespond(`${s}! Sou seu guia de bem-estar. Que bom que você está aqui.`);
+        showTypingAndRespond(`${s}! Sou seu guia de bem-estar.`);
         setTimeout(() => {
             const f = afirmacoes[Math.floor(Math.random()*afirmacoes.length)];
             showTypingAndRespond(`✨ **Afirmação:**\n"${f}"`);
         }, 3000);
-        setTimeout(() => showTypingAndRespond("Como posso ajudar? Escolha um tópico ou escreva o que sente agora.", exibirTopicosDeAjuda), 5500);
+        setTimeout(() => showTypingAndRespond("Escolha um tópico ou escreva o que sente agora.", exibirTopicosDeAjuda), 5500);
     }
 
     document.getElementById('sos-btn').onclick = () => {
